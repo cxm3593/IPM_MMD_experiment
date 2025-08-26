@@ -10,10 +10,15 @@ from src.experiment.experiment_framework import (
     ScalingTransformation,
     run_jitter_experiment,
     run_translation_experiment, 
-    run_scaling_experiment
+    run_scaling_experiment,
+    run_multi_metric_jitter_experiment,
+    run_multi_metric_translation_experiment,
+    run_multi_metric_scaling_experiment
 )
 
 # Config
+experiments_to_run = ["jitter"]  # Options: ["jitter", "translation", "scaling"] or any combination
+
 point_cloud_config = {
     "n_points": 1000,
     "mean": 0,
@@ -21,72 +26,100 @@ point_cloud_config = {
     "seed": 42
 }
 
-def run_all_experiments():
-    """Run systematic experiments for all transformations."""
-    
-    print("=== IPM MMD Comprehensive Experiment Suite ===\n")
-    
-    data_std = point_cloud_config["std"]
-    
-    # 1. Jitter Experiment (with data-relative scaling)
-    print("🔄 Running Jitter Experiment...")
-    jitter_results, jitter_dir = run_jitter_experiment(
-        point_cloud_config, 
-        data_std=data_std
-    )
-    print(f" Jitter experiment complete: {jitter_dir}\n")
-    
-    # 2. Translation Experiment  
-    print(" Running Translation Experiment...")
-    translation_results, translation_dir = run_translation_experiment(
-        point_cloud_config,
-        data_std=data_std
-    )
-    print(f" Translation experiment complete: {translation_dir}\n")
-    
-    # 3. Scaling Experiment
-    print(" Running Scaling Experiment...")
-    scaling_results, scaling_dir = run_scaling_experiment(
-        point_cloud_config
-    )
-    print(f" Scaling experiment complete: {scaling_dir}\n")
-    
-    print(" All experiments completed!")
-    print(f"Results saved in:")
-    print(f"  - Jitter: {jitter_dir}")
-    print(f"  - Translation: {translation_dir}")
-    print(f"  - Scaling: {scaling_dir}")
-    
-    return {
-        'jitter': (jitter_results, jitter_dir),
-        'translation': (translation_results, translation_dir), 
-        'scaling': (scaling_results, scaling_dir)
-    }
 
-def run_single_experiment(experiment_type: str = "jitter"):
-    """Run a single experiment type."""
+def run_experiment(experiments_to_run: list):
+    """
+    Run specified experiments with flexible configuration.
     
+    Args:
+        experiments_to_run: List of experiment types to run 
+                           Options: ["jitter", "translation", "scaling"]
+        
+    Returns:
+        Dictionary with results for each experiment type
+    """
+    
+    # Validate experiment types
+    valid_experiments = ["jitter", "translation", "scaling"]
+    for exp_type in experiments_to_run:
+        if exp_type not in valid_experiments:
+            raise ValueError(f"Unknown experiment type '{exp_type}'. Valid options: {valid_experiments}")
+    
+    # Setup
     data_std = point_cloud_config["std"]
+    results = {}
     
-    if experiment_type == "jitter":
-        return run_jitter_experiment(point_cloud_config, data_std=data_std)
-    elif experiment_type == "translation":
-        return run_translation_experiment(point_cloud_config, data_std=data_std)
-    elif experiment_type == "scaling":
-        return run_scaling_experiment(point_cloud_config)
-    else:
-        raise ValueError(f"Unknown experiment type: {experiment_type}")
+    # Print header
+    print("=== Multi-Metric IPM Comprehensive Experiment Suite ===\n")
+    
+    # Check available metrics
+    from src.experiment.metrics import get_available_metrics
+    available_metrics = get_available_metrics()
+    print(f"Available metrics: {list(available_metrics.keys())}")
+
+    
+    print(f"Running experiments: {experiments_to_run}\n")
+    
+    # Run each requested experiment
+    for exp_type in experiments_to_run:
+        print(f"Running {exp_type.title()} Experiment...")
+        
+        try:
+            # Run multi-metric experiment
+            if exp_type == "jitter":
+                exp_results, output_dir = run_multi_metric_jitter_experiment(
+                    point_cloud_config, data_std=data_std
+                )
+            elif exp_type == "translation":
+                exp_results, output_dir = run_multi_metric_translation_experiment(
+                    point_cloud_config, data_std=data_std
+                )
+            elif exp_type == "scaling":
+                exp_results, output_dir = run_multi_metric_scaling_experiment(
+                    point_cloud_config
+                )
+            
+            results[exp_type] = (exp_results, output_dir)
+            print(f"{exp_type.title()} experiment complete: {output_dir}\n")
+            
+        except Exception as e:
+            print(f"Error in {exp_type} experiment: {e}\n")
+            results[exp_type] = (None, None)
+    
+    # Print summary
+    print("=== Experiment Summary ===")
+    print(f"Completed experiments: {len([k for k, v in results.items() if v[0] is not None])}/{len(experiments_to_run)}")
+    print("Results saved in:")
+    
+    for exp_type, (exp_results, output_dir) in results.items():
+        if output_dir:
+            print(f"  - {exp_type.title()}: {output_dir}")
+        else:
+            print(f"  - {exp_type.title()}: Failed")
+    
+    
+    return results
 
 if __name__ == "__main__":
-    # Choose experiment mode
-    mode = "single"  # Change to "all" to run all experiments
+    # Run experiments based on configuration
+    print("Starting IPM MMD Experiment Suite...\n")
     
-    if mode == "all":
-        # Run all experiments
-        all_results = run_all_experiments()
-    else:
-        # Run single experiment (change experiment_type as needed)
-        experiment_type = "translation"  # Options: "jitter", "translation", "scaling"
-        results, output_dir = run_single_experiment(experiment_type)
-        print(f"\n🎉 {experiment_type.title()} experiment completed!")
-        print(f"Results saved in: {output_dir}")
+    # Run the specified experiments
+    results = run_experiment(experiments_to_run)
+    
+    # Print final summary
+    successful_experiments = [exp for exp, (res, _) in results.items() if res is not None]
+    failed_experiments = [exp for exp, (res, _) in results.items() if res is None]
+    
+    print(f"\n=== Final Results ===")
+    print(f"Successful experiments: {successful_experiments}")
+    if failed_experiments:
+        print(f"Failed experiments: {failed_experiments}")
+    
+    print(f"\nAll experiment files are saved in the 'output/' directory.")
+    
+    # Optional: Return results for further analysis
+    if successful_experiments:
+        print(f"\nTo analyze results, check the HTML files in each experiment directory.")
+        if any(results[exp][0] is not None for exp in successful_experiments):
+            print(f"Multi-metric comparison plots and analysis are available.")

@@ -6,9 +6,16 @@ Author: Chengyi Ma
 import numpy as np
 import pandas as pd
 import os
+import itertools
 from datetime import datetime
 from typing import Dict, List, Callable, Any, Optional, Tuple
 from abc import ABC, abstractmethod
+
+# Import all the modules that were previously imported inline
+from src.data_loader.DataLoader import load_event_data
+from src.point_cloud.PointCloud import PointCloud
+from src.ipm.MMD import MMD
+# Note: MultiMetricExperiment import moved to function level to avoid circular import
 
 
 class Transformation(ABC):
@@ -44,7 +51,6 @@ class JitterTransformation(Transformation):
     
     def apply(self, point_cloud, percentage: float, distance: float, seed: int = 42):
         """Apply jitter transformation."""
-        from src.point_cloud.PointCloud import PointCloud
         return PointCloud.jitter(point_cloud, percentage=percentage, distance=distance, seed=seed)
     
     def get_param_ranges(self) -> Dict[str, np.ndarray]:
@@ -70,7 +76,6 @@ class TranslationTransformation(Transformation):
     
     def apply(self, point_cloud, x_offset: float, y_offset: float, z_offset: float, **kwargs):
         """Apply translation transformation."""
-        from src.point_cloud.PointCloud import PointCloud
         return PointCloud.translate(point_cloud, np.array([x_offset, y_offset, z_offset]))
     
     def get_param_ranges(self) -> Dict[str, np.ndarray]:
@@ -94,7 +99,6 @@ class ScalingTransformation(Transformation):
     
     def apply(self, point_cloud, scale_factor: float, **kwargs):
         """Apply scaling transformation."""
-        from src.point_cloud.PointCloud import PointCloud
         return PointCloud.scale(point_cloud, scale_factor)
     
     def get_param_ranges(self) -> Dict[str, np.ndarray]:
@@ -133,7 +137,6 @@ class MMDExperiment:
         self.output_base_dir = output_base_dir
         
         # Initialize MMD calculator
-        from src.ipm.MMD import MMD
         self.mmd_calc = MMD(kernel=mmd_kernel, gamma=mmd_gamma)
     
     def create_output_directory(self, transformation_name: str) -> str:
@@ -143,7 +146,7 @@ class MMDExperiment:
         os.makedirs(output_dir, exist_ok=True)
         return output_dir
     
-    def run_systematic_experiment(self, transformation: Transformation) -> Tuple[List[Dict], str]:
+    def run_systematic_experiment(self, transformation: Transformation, data_path:str=None) -> Tuple[List[Dict], str]:
         """
         Run systematic experiment with given transformation.
         
@@ -160,11 +163,30 @@ class MMDExperiment:
         print(f"Output directory: {output_dir}")
         
         # Create original point cloud
-        print("Creating original point cloud...")
-        from src.point_cloud.PointCloud import PointCloud
-        pc_original = PointCloud()
-        pc_original.generate_gaussian(**self.point_cloud_config)
-        print(f"Original point cloud: {pc_original}")
+        if data_path is None:
+            # Use generated point cloud
+            print("Creating original point cloud...")
+            pc_original = PointCloud()
+            pc_original.generate_gaussian(**self.point_cloud_config)
+            print(f"Original point cloud: {pc_original}")
+        else:
+            # Load event data and convert to point cloud
+            print(f"Loading event data from: {data_path}")
+            
+            # Convert event data to point cloud array
+            point_cloud_array = load_event_data(
+                data_path,
+                max_events=self.point_cloud_config.get('n_points', 1000),
+                print_summary=False
+            ).convert_to_point_cloud(
+                normalization='minmax',
+                time_scaling='relative'
+            )
+            
+            # Create PointCloud object from the array
+            pc_original = PointCloud(point_cloud_array)
+            print(f"Loaded point cloud: {pc_original.n_points} points")
+
         
         # Get parameter ranges
         param_ranges = transformation.get_param_ranges()
@@ -219,8 +241,6 @@ class MMDExperiment:
     
     def _generate_param_combinations(self, param_ranges: Dict[str, np.ndarray]) -> List[Dict]:
         """Generate all combinations of parameters."""
-        import itertools
-        
         param_names = list(param_ranges.keys())
         param_values = list(param_ranges.values())
         
@@ -302,5 +322,36 @@ def run_scaling_experiment(point_cloud_config: Dict[str, Any],
                           **kwargs) -> Tuple[List[Dict], str]:
     """Run scaling experiment."""
     experiment = MMDExperiment(point_cloud_config, **kwargs)
+    transformation = ScalingTransformation()
+    return experiment.run_systematic_experiment(transformation)
+
+
+# Multi-metric convenience functions
+def run_multi_metric_jitter_experiment(point_cloud_config: Dict[str, Any], 
+                                      data_std: float = 1.0,
+                                      metrics: Optional[Dict] = None,
+                                      **kwargs) -> Tuple[Dict[str, List[Dict]], str]:
+    """Run jitter experiment with multiple metrics."""
+    from .multi_metric import MultiMetricExperiment
+    experiment = MultiMetricExperiment(point_cloud_config, metrics=metrics, **kwargs)
+    transformation = JitterTransformation(data_std=data_std)
+    return experiment.run_systematic_experiment(transformation)
+
+def run_multi_metric_translation_experiment(point_cloud_config: Dict[str, Any],
+                                           data_std: float = 1.0,
+                                           metrics: Optional[Dict] = None,
+                                           **kwargs) -> Tuple[Dict[str, List[Dict]], str]:
+    """Run translation experiment with multiple metrics."""
+    from .multi_metric import MultiMetricExperiment
+    experiment = MultiMetricExperiment(point_cloud_config, metrics=metrics, **kwargs)
+    transformation = TranslationTransformation(data_std=data_std)
+    return experiment.run_systematic_experiment(transformation)
+
+def run_multi_metric_scaling_experiment(point_cloud_config: Dict[str, Any],
+                                       metrics: Optional[Dict] = None,
+                                       **kwargs) -> Tuple[Dict[str, List[Dict]], str]:
+    """Run scaling experiment with multiple metrics."""
+    from .multi_metric import MultiMetricExperiment
+    experiment = MultiMetricExperiment(point_cloud_config, metrics=metrics, **kwargs)
     transformation = ScalingTransformation()
     return experiment.run_systematic_experiment(transformation)
