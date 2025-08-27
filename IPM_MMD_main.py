@@ -3,10 +3,21 @@
 # Author: Chengyi Ma
 
 import numpy as np
+import os
+from datetime import datetime
+from src.experiments.Experiment import Experiment
 
 experiment_config:dict = {
-    "data"      : {},
-    "metrics"   : {},
+    "data"              : {
+        "mean"      : 0.0,
+        "std"       : 1.0,
+        "seed"      : 42,
+        "n_points"  : 1000,
+    },
+    "metrics"           : {},
+    "visualize"         : True,
+    "output_path"       : None,
+    "data_path"         : "data/selected_events.txt"
 }
 
 def main():
@@ -15,6 +26,18 @@ def main():
     
     """
     print("Running IPM MMD Experiment")
+    # Step 1: set up the output environment
+    # Create an unique output subdirectory if it doesn't exist
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = os.path.join("output", f"experiment_{timestamp}")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Set the output path in config
+    experiment_config["output_path"] = os.path.join(output_dir, "base_point_cloud.html")
+
+    # Step 2: Initialize and run the experiment
+    experiment = Experiment(config=experiment_config)
+    experiment.execute()
 
 
 if __name__ == "__main__":
