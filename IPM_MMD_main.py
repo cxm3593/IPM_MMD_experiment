@@ -16,7 +16,7 @@ experiment_config:dict = {
     },
     "metrics"           : {},
     "visualize"         : True,
-    "output_path"       : None,
+    "output_dir"       : None,
     "data_path"         : "data/selected_events.txt"
 }
 
@@ -33,7 +33,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     
     # Set the output path in config
-    experiment_config["output_path"] = os.path.join(output_dir, "base_point_cloud.html")
+    experiment_config["output_dir"] = output_dir
 
     # Step 2: Initialize and run the experiment
     experiment = Experiment(config=experiment_config)

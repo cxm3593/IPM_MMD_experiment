@@ -4,6 +4,7 @@ Author: Chengyi Ma
 """
 
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 from typing import Optional, Union
 
@@ -21,6 +22,20 @@ class PointCloud:
             points: Optional numpy array of shape (n, 3) representing 3D points
         """
         self.points = points if points is not None else np.empty((0, 3))
+
+    @classmethod
+    def from_dataframe(cls, df: pd.DataFrame) -> 'PointCloud':
+        """
+        Alternate constructor: Creates a PointCloud instance from a pandas DataFrame.
+        """
+        if not all(col in df.columns for col in ['x', 'y', 'timestamp']):
+            raise ValueError("DataFrame must contain 'x', 'y', and 'timestamp' columns.")
+            
+        # Convert DataFrame to NumPy array
+        numpy_array = df[['x', 'y', 'timestamp']].to_numpy()
+
+        # Call the primary constructor to create the instance
+        return cls(numpy_array)
         
     @property
     def n_points(self) -> int:
@@ -137,7 +152,9 @@ class PointCloud:
                     zeroline=show_axes
                 ),
                 camera=dict(
-                    eye=dict(x=1.5, y=1.5, z=1.5)
+                    eye=dict(x=0, y=0, z=-1.5),
+                    center=dict(x=0, y=0, z=0),
+                    up=dict(x=0, y=1, z=0),
                 ),
                 aspectmode='cube'
             ),
@@ -164,7 +181,7 @@ class PointCloud:
         """
         fig = self.visualize(**kwargs)
         fig.show()
-    
+
     def save_html(self, filename: str, **kwargs):
         """
         Save the interactive 3D plot as an HTML file.
@@ -175,7 +192,7 @@ class PointCloud:
         """
         fig = self.visualize(**kwargs)
         fig.write_html(filename)
-        print(f"Interactive plot saved as {filename}")
+        # print(f"Interactive plot saved as {filename}")
     
     @staticmethod
     def translate(point_cloud: 'PointCloud', translation: Union[float, np.ndarray]) -> 'PointCloud':
@@ -413,7 +430,7 @@ class PointCloud:
         """
         fig = PointCloud.plot_multiple(point_clouds, **kwargs)
         fig.write_html(filename)
-        print(f"Multiple point clouds plot saved as {filename}")
+        # print(f"Multiple point clouds plot saved as {filename}")
     
     def __repr__(self) -> str:
         """String representation of the PointCloud."""

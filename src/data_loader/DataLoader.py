@@ -40,7 +40,8 @@ class EventDataLoader:
         self.data_path = Path(data_path)
         self.delimiter = delimiter
         self.time_unit = time_unit
-        
+        self.initial_timestamp = None # The first timestamp from original data
+
         # Default column names for event data
         self.column_names = ['timestamp', 'x', 'y', 'polarity']
         
@@ -81,6 +82,10 @@ class EventDataLoader:
             print(f"Data shape: {self._raw_data.shape}")
             
             
+            # Set initial timestamp to 0
+            self.initial_timestamp = self._raw_data['timestamp'].iloc[0]
+            self._raw_data['timestamp'] = self._raw_data['timestamp'] - self._raw_data['timestamp'].iloc[0]
+
             return self._raw_data.copy()
             
         except Exception as e:
@@ -114,7 +119,7 @@ class EventDataLoader:
         segments = []
         for i in range(0, len(self._raw_data), segment_size):
             segment = self._raw_data[i:i + segment_size]
-            segments.append(PointCloud(segment))
+            segments.append(PointCloud.from_dataframe(segment))
 
         return segments
 
