@@ -17,7 +17,7 @@ experiment_config:dict = {
     "metrics"           : {},
     "visualize"         : True,
     "output_dir"       : None,
-    "data_path"         : "data/selected_events.txt"
+    "data_path"         : "data/selected_events_clean.txt"
 }
 
 def main():

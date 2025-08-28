@@ -46,7 +46,7 @@ class EventDataLoader:
         self.column_names = ['timestamp', 'x', 'y', 'polarity']
         
         # Data storage
-        self._raw_data = None
+        self._raw_data:pd.DataFrame = None
         self._processed_data = None
         self._data_stats = None
         
@@ -90,7 +90,9 @@ class EventDataLoader:
             
         except Exception as e:
             raise RuntimeError(f"Error loading data: {e}")
-        
+
+
+
     def convert_to_point_cloud(self) -> PointCloud:
         """
         Convert raw event data into point cloud

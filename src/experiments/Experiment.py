@@ -35,7 +35,10 @@ class Experiment:
             for i, point_cloud in enumerate(self.base_point_cloud_list):
                 pt_vis_path = os.path.join(pt_vis_dir, f"base_point_cloud_{i}.html")
                 point_cloud.save_html(pt_vis_path, title=f"Base Point Cloud {i}")
-        pass
+        
+        # Step 1.2 Abnormal data filter
+        # Notice 
+
     
     def prepare_data(self, path=None):
         '''
@@ -49,7 +52,9 @@ class Experiment:
             max_events = data_config.get('max_events', 1000)
             
             event_loader = load_event_data(path, max_events=max_events, print_summary=False)
+            
             base_point_cloud_list = event_loader.data_segmentation(segment_size=2000) # Set for 2000 for now
+
         else:
             # Generate synthetic point cloud
             print(f"Generating synthetic point cloud")
