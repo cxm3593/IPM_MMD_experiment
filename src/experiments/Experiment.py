@@ -98,7 +98,7 @@ class Experiment:
         print(f"Computing MMD metrics using jittered results from previous step...")
         
         # Initialize MMD calculator
-        mmd_calculator = MMD(kernel='linear', gamma=1.0)
+        mmd_calculator = MMD(kernel='rbf', gamma=1.0)
         
         # Use stored jitter parameters
         percentages = self.jitter_parameters['percentages']

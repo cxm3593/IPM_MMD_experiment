@@ -1,0 +1,7 @@
+elephant==1.1.1
+neo==0.14.2
+numpy
+pandas==2.3.2
+plotly==6.3.0
+pyspike==0.8.0
+quantities==0.16.2
