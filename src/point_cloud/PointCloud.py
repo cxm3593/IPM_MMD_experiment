@@ -268,8 +268,8 @@ class PointCloud:
         if seed is not None:
             np.random.seed(seed)
         
-        # Create copy of points
-        new_points = point_cloud.points.copy()
+        # Create copy of points and ensure it's float type to handle shifts
+        new_points = point_cloud.points.copy().astype(np.float64)
         
         # Calculate number of points to jitter
         n_jitter = int(point_cloud.n_points * percentage)
@@ -435,3 +435,32 @@ class PointCloud:
     def __repr__(self) -> str:
         """String representation of the PointCloud."""
         return f"PointCloud({self.n_points} points)"
+    
+    def z_score_normalize(self):
+        """
+        Apply z-score normalization to the point cloud.
+        
+        Z-score normalization transforms each dimension to have mean=0 and std=1:
+        z = (x - mean) / std
+        
+        This normalization is applied in-place to the point cloud data.
+        
+        Returns:
+            self: Returns the PointCloud object for method chaining
+        """
+        if self.n_points == 0:
+            print("Warning: Cannot normalize empty point cloud")
+            return self
+        
+        # Calculate mean and standard deviation for each dimension
+        mean = np.mean(self.points, axis=0)
+        std = np.std(self.points, axis=0)
+        
+        # Handle dimensions with zero variance (constant values)
+        # Set std to 1 for dimensions with zero variance to avoid division by zero
+        std = np.where(std == 0, 1, std)
+        
+        # Apply z-score normalization
+        self.points = (self.points - mean) / std
+        
+        return self

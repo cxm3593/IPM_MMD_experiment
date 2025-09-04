@@ -17,7 +17,15 @@ experiment_config:dict = {
     "metrics"           : {},
     "visualize"         : True,
     "output_dir"       : None,
-    "data_path"         : "data/selected_events_clean.txt"
+    "data_path"        : "data/selected_events_clean.txt",
+    "modification"     : {
+        "jitter"   : {
+            "percentages": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+            #"distances": [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0],
+            "distances": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "seed": 42
+        }
+    }
 }
 
 def main():
