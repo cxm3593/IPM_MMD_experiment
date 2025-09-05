@@ -22,7 +22,7 @@ def test_main():
     base_point_cloud_list = event_loader.data_segmentation(segment_size=2000)
     print(f"Number of point clouds generated: {len(base_point_cloud_list)}")
 
-    # visualize the first point cloud for testing sample
+    # visualize the first point cloud for testing sample 
     pc = base_point_cloud_list[0]
 
     jittered_pc = PointCloud.jitter_image_space(pc, 0.5, 2, 50, seed=42)

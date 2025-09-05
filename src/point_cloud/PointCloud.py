@@ -450,7 +450,9 @@ class PointCloud:
                     zeroline=show_axes
                 ),
                 camera=dict(
-                    eye=dict(x=1.5, y=1.5, z=1.5)
+                    eye=dict(x=0, y=0, z=-1.5),
+                    center=dict(x=0, y=0, z=0),
+                    up=dict(x=0, y=1, z=0),
                 ),
                 aspectmode='cube'
             ),
