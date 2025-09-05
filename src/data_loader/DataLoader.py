@@ -126,8 +126,7 @@ class EventDataLoader:
         return segments
 
 
-def load_event_data(data_path: str, max_events: Optional[int] = None,
-                   print_summary: bool = True) -> EventDataLoader:
+def load_event_data(data_path: str) -> EventDataLoader:
     """
     Convenience function to quickly load event data.
     

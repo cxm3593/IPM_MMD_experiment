@@ -6,6 +6,8 @@ Author: Chengyi Ma
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import os
+import sys
 from typing import Optional, Union
 
 
@@ -290,6 +292,62 @@ class PointCloud:
         return PointCloud(new_points)
     
     @staticmethod
+    def jitter_image_space(point_cloud: 'PointCloud',
+                           percentage: float,
+                           spatial_distance: float,
+                           temporal_distance: float,
+                           seed: Optional[int] = None) -> 'PointCloud':
+        """
+        Jitter the 3D point cloud in image space (x, y, timestamp).
+        x and y are shifted by spatial_distance (pixels), timestamp is shifted by temporal_distance (microseconds).
+        Args:
+            point_cloud: Input PointCloud object
+            percentage: Percentage of points to jitter (0.0 to 1.0)
+            spatial_distance: Distance to shift in x and y (pixels)
+            temporal_distance: Distance to shift in timestamp (microseconds)
+            seed: Random seed for reproducibility
+        """
+
+        if point_cloud.n_points == 0:
+            return PointCloud()
+        
+        if seed is not None:
+            np.random.seed(seed)
+        
+        # Calculate the number of points to jitter
+        n_jitter = int(point_cloud.n_points * percentage)
+
+        # Create a copy of the point cloud to avoid modifying the original
+        jittered_cloud_points = point_cloud.points.copy()
+
+        if n_jitter > 0:
+            selected_indices = np.random.choice(
+                point_cloud.n_points, n_jitter, replace=False
+            )
+
+            # Generate jitter for spatial dimensions first (x, y)
+            ## first, determine the direction with unit vectors
+            spatial_directions = np.random.randn(n_jitter, 2)
+            direction_norms = np.linalg.norm(spatial_directions, axis=1, keepdims=True)
+            spatial_directions_unit = spatial_directions / direction_norms
+            spatial_shifts = spatial_directions_unit * spatial_distance
+
+            ### convert float shifts to integers for pixel shifts
+            spatial_shifts = np.round(spatial_shifts).astype(int)
+
+            ### Apply spatial shifts
+            jittered_cloud_points[selected_indices, :2] += spatial_shifts
+
+            ## Second, apply temporal jitter
+            temporal_directions = np.random.choice([-1, 1], size=n_jitter)
+            temporal_shifts = temporal_directions * temporal_distance
+
+            jittered_cloud_points[selected_indices, 2] += temporal_shifts
+
+        return PointCloud(jittered_cloud_points)
+
+    
+    @staticmethod
     def plot_multiple(point_clouds: list,
                      labels: Optional[list] = None,
                      colors: Optional[list] = None,
@@ -464,3 +522,8 @@ class PointCloud:
         self.points = (self.points - mean) / std
         
         return self
+
+
+# Test code
+if __name__ == "__main__":
+    pass

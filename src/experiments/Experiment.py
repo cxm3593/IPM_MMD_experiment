@@ -37,8 +37,8 @@ class Experiment:
                 os.makedirs(pt_vis_dir, exist_ok=True)
 
             for i, point_cloud in enumerate(self.base_point_cloud_list):
-                # z-score normalization
-                point_cloud.z_score_normalize()
+                # z-score normalization, disabled for now.
+                # point_cloud.z_score_normalize()
                 pt_vis_path = os.path.join(pt_vis_dir, f"base_point_cloud_{i}.html")
                 point_cloud.save_html(pt_vis_path, title=f"Base Point Cloud {i}")
         
@@ -186,7 +186,7 @@ class Experiment:
             data_config = self.config.get('data', {})
             max_events = data_config.get('max_events', 1000)
             
-            event_loader = load_event_data(path, max_events=max_events, print_summary=False)
+            event_loader = load_event_data(path)
             
             base_point_cloud_list = event_loader.data_segmentation(segment_size=2000) # Set for 2000 for now
 
